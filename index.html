@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Guess Who? – Desi Edition</title>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800;900&family=Nunito:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --saffron:#F97316;--saffron-dk:#C2410C;--saffron-lt:#FFF7ED;
+  --green:#15803D;--green-dk:#14532D;--green-lt:#F0FDF4;
+  --red:#DC2626;--red-dk:#991B1B;
+  --paper:#FDF6E3;--brown:#92400E;--text:#1C1917;--muted:#78716C;
+  --border:#D6B87A;--card:#FFFBF0;--shadow:rgba(146,64,14,0.15);
+}
+body{font-family:'Nunito',sans-serif;background:var(--paper);min-height:100vh;color:var(--text);
+  background-image:radial-gradient(ellipse at 15% 40%,rgba(249,115,22,.06) 0%,transparent 55%),
+  radial-gradient(ellipse at 85% 15%,rgba(21,128,61,.06) 0%,transparent 55%);}
+h1,h2,h3,h4{font-family:'Baloo 2',cursive;}
+#app{min-height:100vh;}
+.topbar{height:5px;background:linear-gradient(90deg,var(--saffron) 0%,#FCD34D 33%,var(--green) 66%,var(--red) 100%);position:fixed;top:0;left:0;right:0;z-index:999;}
+
+/* screens */
+.screen{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:3rem 2rem 2rem;gap:1.25rem;}
+.home-deco{display:flex;gap:.75rem;font-size:2.2rem;animation:float 3s ease-in-out infinite;}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+.home-title{font-size:clamp(3.5rem,12vw,7rem);font-weight:900;color:var(--saffron-dk);line-height:1;text-align:center;letter-spacing:-2px;text-shadow:5px 5px 0 rgba(249,115,22,.18);}
+.home-who{color:var(--green-dk);}
+.home-sub{font-family:'Baloo 2',cursive;font-size:1.1rem;font-weight:700;color:var(--green);text-align:center;letter-spacing:1px;}
+.home-rules{background:var(--card);border:2px solid var(--border);border-radius:14px;padding:1.1rem 1.4rem;max-width:480px;width:100%;box-shadow:0 3px 16px var(--shadow);}
+.home-rules ol{padding-left:1.3rem;display:flex;flex-direction:column;gap:.35rem;}
+.home-rules li{font-size:.88rem;color:var(--brown);line-height:1.4;}
+.home-rules li strong{color:var(--saffron-dk);}
+.info-txt{color:var(--muted);font-size:.9rem;text-align:center;max-width:420px;line-height:1.5;}
+.err-text{color:var(--red);font-size:.88rem;font-weight:700;text-align:center;background:#FEF2F2;border:2px solid #FECACA;border-radius:10px;padding:.5rem 1rem;max-width:360px;}
+
+/* buttons */
+.btn-row{display:flex;gap:.9rem;flex-wrap:wrap;justify-content:center;}
+.btn{font-family:'Baloo 2',cursive;font-size:1rem;font-weight:800;padding:.7rem 1.8rem;border-radius:12px;border:3px solid transparent;cursor:pointer;transition:transform .12s,box-shadow .12s,background .12s;letter-spacing:.3px;display:inline-flex;align-items:center;gap:.4rem;}
+.btn:active{transform:scale(.96) translateY(2px)!important;}
+.btn-primary{background:var(--saffron);color:white;border-color:var(--saffron-dk);box-shadow:0 4px 0 var(--saffron-dk);}
+.btn-primary:hover{background:var(--saffron-dk);box-shadow:0 2px 0 #9a3412;transform:translateY(2px);}
+.btn-secondary{background:var(--green);color:white;border-color:var(--green-dk);box-shadow:0 4px 0 var(--green-dk);}
+.btn-secondary:hover{background:var(--green-dk);box-shadow:0 2px 0 #052e16;transform:translateY(2px);}
+.btn-danger{background:var(--red);color:white;border-color:var(--red-dk);box-shadow:0 4px 0 var(--red-dk);}
+.btn-danger:hover{background:var(--red-dk);box-shadow:0 2px 0 #7f1d1d;transform:translateY(2px);}
+.btn-ghost{background:transparent;color:var(--muted);border-color:var(--border);}
+.btn-ghost:hover{background:var(--card);color:var(--text);}
+.btn-yes{background:var(--green);color:white;border-color:var(--green-dk);box-shadow:0 4px 0 var(--green-dk);flex:1;font-size:1.05rem;padding:.7rem;}
+.btn-yes:hover{background:var(--green-dk);box-shadow:0 2px 0 #052e16;transform:translateY(2px);}
+.btn-no{background:var(--red);color:white;border-color:var(--red-dk);box-shadow:0 4px 0 var(--red-dk);flex:1;font-size:1.05rem;padding:.7rem;}
+.btn-no:hover{background:var(--red-dk);box-shadow:0 2px 0 #7f1d1d;transform:translateY(2px);}
+
+/* code */
+.code-card{background:var(--card);border:3px solid var(--border);border-radius:18px;padding:1.6rem 2.4rem;text-align:center;box-shadow:0 6px 24px var(--shadow);width:100%;max-width:360px;}
+.code-label{font-family:'Baloo 2',cursive;font-size:.8rem;color:var(--muted);text-transform:uppercase;letter-spacing:2px;margin-bottom:.6rem;}
+.code-value{font-family:'Baloo 2',cursive;font-size:3.2rem;font-weight:900;color:var(--saffron-dk);letter-spacing:10px;cursor:pointer;transition:color .2s;user-select:all;}
+.code-value:hover{color:var(--green-dk);}
+.code-hint{font-size:.78rem;color:var(--muted);margin-top:.4rem;}
+.code-input{font-family:'Baloo 2',cursive;font-size:2.2rem;font-weight:800;letter-spacing:8px;text-align:center;text-transform:uppercase;padding:.75rem 1rem;border:3px solid var(--border);border-radius:12px;background:var(--card);color:var(--saffron-dk);width:240px;outline:none;}
+.code-input:focus{border-color:var(--saffron);box-shadow:0 0 0 3px rgba(249,115,22,.2);}
+.waiting-pill{display:flex;align-items:center;gap:.6rem;font-family:'Baloo 2',cursive;font-size:1rem;font-weight:700;color:var(--green-dk);background:var(--green-lt);border:2px solid #86EFAC;border-radius:30px;padding:.5rem 1.2rem;}
+.pulse-dot{width:9px;height:9px;border-radius:50%;background:var(--green);animation:pdot 1.3s ease-in-out infinite;}
+@keyframes pdot{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.35;transform:scale(.65)}}
+
+/* picking */
+.pick-screen{min-height:100vh;padding:4rem 1rem 6rem;display:flex;flex-direction:column;align-items:center;gap:1.2rem;}
+.pick-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:.55rem;max-width:860px;width:100%;}
+@media(max-width:680px){.pick-grid{grid-template-columns:repeat(4,1fr);}}
+@media(max-width:460px){.pick-grid{grid-template-columns:repeat(3,1fr);}}
+.char-pick-card{background:var(--card);border:2.5px solid var(--border);border-radius:12px;padding:.4rem .3rem .35rem;text-align:center;cursor:pointer;transition:all .13s ease;position:relative;overflow:hidden;}
+.char-pick-card:hover{border-color:var(--saffron);background:var(--saffron-lt);transform:translateY(-3px);box-shadow:0 5px 14px var(--shadow);}
+.char-pick-card.selected{border-color:var(--saffron);background:var(--saffron-lt);box-shadow:0 0 0 3px rgba(249,115,22,.25),0 5px 14px var(--shadow);}
+.char-pick-card.selected::after{content:'✓';position:absolute;top:-8px;right:-8px;width:20px;height:20px;background:var(--saffron);color:white;border-radius:50%;font-size:.7rem;font-weight:900;display:flex;align-items:center;justify-content:center;line-height:20px;}
+.pick-img{width:100%;aspect-ratio:1;border-radius:8px;object-fit:cover;display:block;}
+.pick-name{font-family:'Baloo 2',cursive;font-size:.58rem;font-weight:800;color:var(--brown);margin-top:.22rem;line-height:1.2;}
+.pick-confirm-bar{position:sticky;bottom:.75rem;display:flex;align-items:center;gap:1rem;flex-wrap:wrap;justify-content:center;background:rgba(253,246,227,.95);border:2px solid var(--border);border-radius:16px;padding:.8rem 1.2rem;box-shadow:0 4px 20px var(--shadow);backdrop-filter:blur(8px);width:100%;max-width:520px;}
+
+/* game */
+.game-wrap{display:grid;grid-template-columns:1fr 310px;gap:.9rem;width:100%;max-width:1180px;min-height:100vh;padding:1.2rem .9rem .9rem;align-items:start;}
+@media(max-width:860px){.game-wrap{grid-template-columns:1fr;}}
+.board-col{display:flex;flex-direction:column;gap:.8rem;}
+.game-bar{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.5rem;}
+.game-logo{font-size:1.4rem;font-weight:900;color:var(--saffron-dk);}
+.turn-badge{font-family:'Baloo 2',cursive;font-size:.85rem;font-weight:800;padding:.35rem .9rem;border-radius:20px;border:2.5px solid transparent;display:flex;align-items:center;gap:.35rem;}
+.turn-badge.mine{background:#FEF9C3;border-color:#CA8A04;color:#713F12;}
+.turn-badge.theirs{background:#F1F5F9;border-color:#94A3B8;color:#475569;}
+.elim-hint{font-size:.78rem;color:var(--muted);font-style:italic;}
+.board-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:.45rem;}
+@media(max-width:560px){.board-grid{grid-template-columns:repeat(4,1fr);}}
+.board-card{background:var(--card);border:2px solid var(--border);border-radius:10px;padding:.28rem .22rem .25rem;text-align:center;cursor:pointer;transition:all .13s ease;position:relative;overflow:hidden;user-select:none;}
+.board-card:hover:not(.elim){border-color:var(--red);transform:scale(1.04);box-shadow:0 3px 10px rgba(220,38,38,.18);}
+.board-card.elim{opacity:.22;filter:grayscale(1) sepia(.3);cursor:default;transform:none!important;box-shadow:none!important;}
+.board-card.elim .x-mark{display:flex;}
+.x-mark{display:none;position:absolute;inset:0;align-items:center;justify-content:center;font-size:2rem;font-weight:900;color:var(--red);background:rgba(254,226,226,.5);z-index:2;}
+.board-img{width:100%;aspect-ratio:1;border-radius:7px;object-fit:cover;display:block;}
+.board-name{font-family:'Baloo 2',cursive;font-size:.5rem;font-weight:800;color:var(--brown);margin-top:.12rem;line-height:1.15;}
+
+/* sidebar */
+.sidebar-col{display:flex;flex-direction:column;gap:.8rem;}
+.panel{background:var(--card);border:2.5px solid var(--border);border-radius:14px;padding:.9rem 1rem;box-shadow:0 3px 14px var(--shadow);}
+.panel-title{font-family:'Baloo 2',cursive;font-size:.75rem;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:1.8px;margin-bottom:.65rem;}
+.mychar-row{display:flex;align-items:center;gap:.75rem;}
+.mychar-img{width:56px;height:56px;border-radius:10px;object-fit:cover;border:2px solid var(--border);flex-shrink:0;}
+.mychar-name{font-family:'Baloo 2',cursive;font-size:1rem;font-weight:900;color:var(--saffron-dk);line-height:1.2;}
+.mychar-hint{font-size:.73rem;color:var(--muted);margin-top:.1rem;}
+.chat-log{height:200px;overflow-y:auto;display:flex;flex-direction:column;gap:.45rem;margin-bottom:.7rem;padding-right:2px;}
+.chat-log::-webkit-scrollbar{width:4px;}
+.chat-log::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
+.chat-msg{border-radius:9px;padding:.38rem .65rem;font-size:.83rem;line-height:1.35;max-width:92%;}
+.chat-msg .msg-lbl{font-size:.7rem;font-weight:700;margin-bottom:.1rem;opacity:.75;}
+.chat-msg.mine{align-self:flex-end;background:var(--saffron-lt);border:1.5px solid #FED7AA;color:var(--saffron-dk);}
+.chat-msg.theirs{align-self:flex-start;background:var(--green-lt);border:1.5px solid #BBF7D0;color:var(--green-dk);}
+.chat-msg.sys{align-self:center;background:#F8FAFC;border:1.5px solid #E2E8F0;color:var(--muted);font-style:italic;font-size:.78rem;text-align:center;max-width:100%;}
+.pending-q-box{background:#FFFBEB;border:2px solid #FDE68A;border-radius:11px;padding:.7rem .8rem;margin-bottom:.65rem;}
+.pending-q-who{font-family:'Baloo 2',cursive;font-size:.72rem;font-weight:800;color:#92400E;margin-bottom:.25rem;text-transform:uppercase;letter-spacing:1px;}
+.pending-q-text{font-size:.88rem;color:#78350F;font-style:italic;line-height:1.4;}
+.answer-row{display:flex;gap:.5rem;}
+.ask-area{display:flex;flex-direction:column;gap:.5rem;}
+.ask-input{font-family:'Nunito',sans-serif;font-size:.88rem;padding:.58rem .75rem;border:2px solid var(--border);border-radius:10px;background:white;color:var(--text);outline:none;resize:none;width:100%;}
+.ask-input:focus{border-color:var(--saffron);}
+.guess-select{font-family:'Baloo 2',cursive;font-size:.85rem;font-weight:700;padding:.55rem .75rem;border:2px solid var(--border);border-radius:10px;background:white;color:var(--text);outline:none;width:100%;cursor:pointer;margin-bottom:.5rem;}
+.guess-select:focus{border-color:var(--red);}
+.guess-warning{font-size:.75rem;color:var(--red-dk);margin-bottom:.5rem;font-style:italic;}
+
+/* gameover */
+.gameover-emoji{font-size:5rem;animation:bounce .6s ease-out;}
+@keyframes bounce{0%{transform:scale(.4);opacity:0}70%{transform:scale(1.15)}100%{transform:scale(1);opacity:1}}
+.gameover-title{font-size:clamp(2.5rem,8vw,4rem);font-weight:900;text-align:center;}
+.gameover-title.win{color:var(--green);}
+.gameover-title.lose{color:var(--red);}
+.reveal-row{display:flex;gap:1.5rem;flex-wrap:wrap;justify-content:center;margin:.5rem 0;}
+.reveal-card{background:var(--card);border:3px solid var(--border);border-radius:16px;padding:1.3rem 1.6rem;text-align:center;min-width:130px;box-shadow:0 4px 20px var(--shadow);}
+.reveal-lbl{font-family:'Baloo 2',cursive;font-size:.72rem;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);margin-bottom:.45rem;}
+.reveal-img{width:90px;height:90px;border-radius:12px;object-fit:cover;border:2px solid var(--border);}
+.reveal-name{font-family:'Baloo 2',cursive;font-size:.9rem;font-weight:900;color:var(--saffron-dk);margin-top:.4rem;line-height:1.2;}
+</style>
+</head>
+<body>
+<div class="topbar"></div>
+<div id="app"></div>
+<script>
+const IMG_BASE = "game image/";
+const CHARS = [
+  { name: "Active Aditi", file: "active aditi.png" },
+  { name: "Brainy Bhavya", file: "brainy bhavya.png" },
+  { name: "Bubbly Babita", file: "bubbly babita.png" },
+  { name: "Builder Bunty", file: "builder bunty.png" },
+  { name: "Chatty Chatterjee", file: "chatty chatterjee.png" },
+  { name: "Chirpy Charu", file: "chirpy charu.png" },
+  { name: "Dapper Dev", file: "dapper dev.png" },
+  { name: "Darling Dilip", file: "darling dilip.png" },
+  { name: "Dashing Danish", file: "dashing danish.png" },
+  { name: "Delulu Dia", file: "delulu dia.png" },
+  { name: "Funky Farah", file: "funky farah.png" },
+  { name: "Fussy Fiza", file: "fussy fiza.png" },
+  { name: "Gourmet Gaurav", file: "gourmet gaurav.png" },
+  { name: "Jazzy Jazmine", file: "jazzy jazmine.png" },
+  { name: "Jolly Javed", file: "jolly javed.png" },
+  { name: "Karmic Kevin", file: "karmic kevin.png" },
+  { name: "Klingy Kalpana", file: "klingy kalpana.png" },
+  { name: "Krafty Kareem", file: "krafty kareem.png" },
+  { name: "Lazy Lata", file: "lazy lata.png" },
+  { name: "Merry Mendi", file: "merry mendi.png" },
+  { name: "Moody Medha", file: "moody medha.png" },
+  { name: "Naive Nandu", file: "naive nandu.png" },
+  { name: "Nerdy Nikhil", file: "nerdy nikhil.png" },
+  { name: "Nosy Nehaa", file: "nosy nehaa.png" },
+  { name: "Oldie Omkar", file: "oldie omkar.png" },
+  { name: "Pookie Pinky", file: "pookie pinky.png" },
+  { name: "Richie Richard", file: "richie richard.png" },
+  { name: "Rolay Ratan", file: "rolay ratan.png" },
+  { name: "Rowdy Raghu", file: "rowdy raghu.png" },
+  { name: "Sassy Sara", file: "sassy sara.png" },
+  { name: "Sincere Saumya", file: "sincere saumya.png" },
+  { name: "Sneaky Shambhu", file: "sneaky shambhu.png" },
+  { name: "Swagger Subbu", file: "swagger subbu.png" },
+  { name: "Techie Tarun", file: "techie tarun.png" },
+  { name: "Tinkerer Tinku", file: "tinkerer tinku.png" },
+  { name: "Yappy Yamini", file: "yappy yamini.png" }
+].map(c=>({name:c.name,img:encodeURI(IMG_BASE+c.file)}));
+
+let gs={
+  phase:'home',isHost:false,peer:null,conn:null,
+  roomCode:'',joinInput:'',
+  myChar:null,opponentChar:null,myGuessChar:null,
+  eliminated:new Set(),isMyTurn:false,pendingQ:null,
+  chatLog:[],error:'',won:null,opponentReady:false,
+};
+
+function getChar(n){return CHARS.find(c=>c.name===n)||{name:n,img:''};}
+function addChat(text,type='sys',lbl=''){gs.chatLog.push({text,type,lbl});if(gs.chatLog.length>80)gs.chatLog.shift();}
+function scrollChat(){requestAnimationFrame(()=>{const e=document.getElementById('chat-log');if(e)e.scrollTop=e.scrollHeight;});}
+function destroyPeer(){if(gs.peer){try{gs.peer.destroy();}catch(e){}gs.peer=null;}gs.conn=null;}
+function makePeer(id){
+  destroyPeer();
+  const opts={debug:0,config:{iceServers:[{urls:'stun:stun.l.google.com:19302'}]}};
+  gs.peer=id?new Peer(id,opts):new Peer(opts);
+  return gs.peer;
+}
+function wireConn(conn){
+  gs.conn=conn;
+  conn.on('data',handleMsg);
+  conn.on('close',()=>{if(gs.phase!=='gameover'){addChat('Opponent disconnected.','sys');render();}});
+  conn.on('error',e=>console.warn('conn err',e));
+}
+function send(msg){if(gs.conn&&gs.conn.open)gs.conn.send(msg);}
+
+function createGame(){
+  const code=Math.random().toString(36).substr(2,6).toUpperCase();
+  gs.roomCode=code;gs.isHost=true;gs.phase='creating';gs.error='';render();
+  const peer=makePeer('GW-'+code);
+  peer.on('error',e=>{gs.error='Peer error: '+e.type;render();});
+  peer.on('connection',conn=>{wireConn(conn);conn.on('open',()=>goToPick());});
+}
+
+function joinGame(){
+  const code=gs.joinInput.trim().toUpperCase();
+  if(code.length<4){gs.error='Please enter a valid invite code';render();return;}
+  gs.error='';gs.isHost=false;render();
+  const peer=makePeer();
+  peer.on('error',()=>{gs.error='Could not connect. Check the code!';render();});
+  peer.on('open',()=>{
+    const conn=peer.connect('GW-'+code,{reliable:true});
+    wireConn(conn);
+    conn.on('open',()=>goToPick());
+    conn.on('error',()=>{gs.error='Connection failed. Check the code!';render();});
+  });
+}
+
+function goToPick(){
+  gs.phase='picking';gs.myChar=null;gs.opponentChar=null;gs.myGuessChar=null;
+  gs.eliminated=new Set();gs.chatLog=[];gs.pendingQ=null;gs.opponentReady=false;render();
+}
+function confirmPick(){
+  if(!gs.myChar)return;
+  send({type:'ready'});
+  if(gs.opponentReady){startGame();}else{gs.phase='waiting';render();}
+}
+function startGame(){gs.phase='playing';gs.isMyTurn=gs.isHost;gs.opponentReady=false;render();scrollChat();}
+
+function askQuestion(text){
+  text=text.trim();if(!text||!gs.isMyTurn||gs.pendingQ)return;
+  addChat(text,'mine','You ask:');send({type:'question',text});gs.isMyTurn=false;render();scrollChat();
+}
+function answerQuestion(value){
+  if(!gs.pendingQ)return;
+  addChat('You answered: '+(value==='Yes'?'Yes':'No'),'mine');
+  send({type:'answer',value});gs.pendingQ=null;gs.isMyTurn=true;render();scrollChat();
+}
+function makeGuess(charName){
+  if(!charName)return;
+  gs.myGuessChar=charName;
+  addChat('Final Guess: '+charName,'mine','Final guess');
+  send({type:'guess',character:charName});gs.isMyTurn=false;render();scrollChat();
+}
+
+function handleMsg(msg){
+  switch(msg.type){
+    case 'ready':
+      if(gs.phase==='waiting'){startGame();}else{gs.opponentReady=true;}break;
+    case 'question':
+      gs.pendingQ=msg.text;addChat(msg.text,'theirs','Opponent asks:');gs.isMyTurn=false;render();scrollChat();break;
+    case 'answer':
+      addChat('Answer: '+(msg.value==='Yes'?'Yes':'No'),'sys');gs.isMyTurn=false;gs.pendingQ=null;render();scrollChat();break;
+    case 'guess':{
+      const correct=msg.character===gs.myChar;
+      send({type:'guess_result',correct,revealChar:gs.myChar});
+      gs.won=!correct;gs.myGuessChar=null;gs.phase='gameover';render();break;}
+    case 'guess_result':
+      gs.opponentChar=msg.revealChar;gs.won=msg.correct;gs.phase='gameover';render();break;
+  }
+}
+
+function render(){
+  const app=document.getElementById('app');
+  switch(gs.phase){
+    case 'home':     app.innerHTML=tmplHome();break;
+    case 'creating': app.innerHTML=tmplCreating();break;
+    case 'joining':  app.innerHTML=tmplJoining();break;
+    case 'picking':  app.innerHTML=tmplPicking();break;
+    case 'waiting':  app.innerHTML=tmplWaiting();break;
+    case 'playing':  app.innerHTML=tmplPlaying();break;
+    case 'gameover': app.innerHTML=tmplGameOver();break;
+  }
+  bindEvents();
+}
+
+function tmplHome(){
+  return`<div class="screen">
+    <div class="home-deco">Desi Edition</div>
+    <h1 class="home-title">GUESS <span class="home-who">WHO?</span></h1>
+    <p class="home-sub">Desi Edition · 36 Characters</p>
+    <div class="home-rules"><ol>
+      <li>Both players pick a <strong>secret character</strong> — keep it hidden!</li>
+      <li>Take turns asking <strong>Yes / No</strong> questions to narrow it down.</li>
+      <li><strong>Eliminate</strong> characters by clicking them on your board.</li>
+      <li>If you <strong>guess incorrectly</strong>, you lose immediately!</li>
+      <li>First to correctly <strong>name the mystery character WINS!</strong></li>
+    </ol></div>
+    <div class="btn-row">
+      <button class="btn btn-primary" id="btn-create">Create Game</button>
+      <button class="btn btn-secondary" id="btn-go-join">Join with Code</button>
+    </div>
+    <p class="info-txt" style="margin-top:.5rem">Two players · Invite code · No account needed</p>
+  </div>`;
+}
+
+function tmplCreating(){
+  return`<div class="screen">
+    <h2 style="color:var(--saffron-dk)">Share Your Invite Code</h2>
+    <p class="info-txt">Send this code to your friend — they enter it to join!</p>
+    <div class="code-card">
+      <div class="code-label">Your Game Code</div>
+      <div class="code-value" id="code-copy" title="Click to copy">${gs.roomCode}</div>
+      <div class="code-hint">Click the code to copy it</div>
+    </div>
+    <div class="waiting-pill"><div class="pulse-dot"></div>Waiting for opponent to join…</div>
+    ${gs.error?`<div class="err-text">${gs.error}</div>`:''}
+    <button class="btn btn-ghost" id="btn-back">← Back</button>
+  </div>`;
+}
+
+function tmplJoining(){
+  return`<div class="screen">
+    <h2 style="color:var(--green-dk)">Join a Game</h2>
+    <p class="info-txt">Enter the invite code from your friend</p>
+    <input class="code-input" id="join-input" maxlength="8" placeholder="ABC123" value="${gs.joinInput}" autocomplete="off" spellcheck="false">
+    ${gs.error?`<div class="err-text">${gs.error}</div>`:''}
+    <div class="btn-row">
+      <button class="btn btn-secondary" id="btn-connect">Join Game →</button>
+      <button class="btn btn-ghost" id="btn-back">← Back</button>
+    </div>
+  </div>`;
+}
+
+function tmplPicking(){
+  const ch=gs.myChar?getChar(gs.myChar):null;
+  return`<div class="pick-screen">
+    <div style="text-align:center">
+      <h2 style="color:var(--saffron-dk);font-size:1.8rem">Pick Your Secret Character</h2>
+      <p class="info-txt">Your opponent will try to guess who you are. Choose wisely!</p>
+    </div>
+    <div class="pick-grid">
+      ${CHARS.map(c=>`
+        <div class="char-pick-card ${gs.myChar===c.name?'selected':''}" data-pick="${c.name}">
+          <img class="pick-img" src="${c.img}" alt="${c.name}" draggable="false">
+          <div class="pick-name">${c.name}</div>
+        </div>`).join('')}
+    </div>
+    <div class="pick-confirm-bar">
+      ${ch?`
+        <img src="${ch.img}" style="width:40px;height:40px;border-radius:8px;object-fit:cover;border:2px solid var(--border)">
+        <span style="font-family:'Baloo 2',cursive;font-size:.9rem;font-weight:800;color:var(--green-dk)">${ch.name}</span>
+        <button class="btn btn-primary" id="btn-confirm">Confirm & Play!</button>
+      `:'<span style="color:var(--muted);font-size:.9rem">Click a character to select them</span>'}
+    </div>
+  </div>`;
+}
+
+function tmplWaiting(){
+  const ch=getChar(gs.myChar);
+  return`<div class="screen">
+    <div style="font-size:4rem">Waiting</div>
+    <h2 style="color:var(--saffron-dk)">Waiting for opponent…</h2>
+    <p class="info-txt">You've locked in your character. Opponent is still choosing theirs!</p>
+    <div class="waiting-pill"><div class="pulse-dot"></div>They'll be right back…</div>
+    <div class="panel" style="text-align:center;margin-top:.5rem">
+      <div class="panel-title">Your Secret</div>
+      <img src="${ch.img}" style="width:80px;height:80px;border-radius:12px;object-fit:cover;border:2px solid var(--border);margin:0 auto;display:block">
+      <div style="font-family:'Baloo 2',cursive;font-size:1rem;font-weight:900;color:var(--saffron-dk);margin-top:.4rem">${gs.myChar}</div>
+    </div>
+  </div>`;
+}
+
+function tmplPlaying(){
+  const myC=getChar(gs.myChar);
+  const hasPQ=!!gs.pendingQ;
+  const canAsk=gs.isMyTurn&&!hasPQ;
+  const remCount=CHARS.length-gs.eliminated.size;
+  return`<div class="game-wrap">
+    <div class="board-col">
+      <div class="game-bar">
+        <div class="game-logo">Guess Who? – Desi Edition</div>
+        <div class="turn-badge ${gs.isMyTurn?'mine':'theirs'}">
+          ${gs.isMyTurn?'Your Turn':'Opponent\'s Turn'}
+        </div>
+      </div>
+      <p class="elim-hint">Click a character to eliminate · Click again to restore</p>
+      <div class="board-grid">
+        ${CHARS.map(c=>`
+          <div class="board-card ${gs.eliminated.has(c.name)?'elim':''}" data-elim="${c.name}">
+            <div class="x-mark">✕</div>
+            <img class="board-img" src="${c.img}" alt="${c.name}" draggable="false">
+            <div class="board-name">${c.name}</div>
+          </div>`).join('')}
+      </div>
+      <p class="elim-hint" style="text-align:right" id="rem-count">${remCount} of ${CHARS.length} remaining</p>
+    </div>
+
+    <div class="sidebar-col">
+      <div class="panel">
+        <div class="panel-title">My Secret Character</div>
+        <div class="mychar-row">
+          <img class="mychar-img" src="${myC.img}" alt="${myC.name}">
+          <div><div class="mychar-name">${gs.myChar}</div><div class="mychar-hint">Don't let them guess this!</div></div>
+        </div>
+      </div>
+
+      <div class="panel" style="flex:1">
+        <div class="panel-title">Questions & Answers</div>
+        <div class="chat-log" id="chat-log">
+          ${gs.chatLog.length===0
+            ?`<div class="chat-msg sys">Game started! ${gs.isHost?'You go first!':'Opponent goes first!'} Ask Yes/No questions to find the mystery character.</div>`
+            :gs.chatLog.map(m=>`<div class="chat-msg ${m.type}">${m.lbl?`<div class="msg-lbl">${m.lbl}</div>`:''}${m.text}</div>`).join('')}
+        </div>
+        ${hasPQ?`
+          <div class="pending-q-box">
+            <div class="pending-q-who">Opponent asks:</div>
+            <div class="pending-q-text">"${gs.pendingQ}"</div>
+          </div>
+          <div class="answer-row">
+            <button class="btn btn-yes" id="btn-yes">Yes</button>
+            <button class="btn btn-no" id="btn-no">No</button>
+          </div>
+        `:canAsk?`
+          <div class="ask-area">
+            <textarea class="ask-input" id="ask-input" rows="2" placeholder="Type your Yes/No question… (Enter to send)"></textarea>
+            <button class="btn btn-primary" id="btn-ask">Ask Question</button>
+          </div>
+        `:`<div style="text-align:center;color:var(--muted);font-size:.83rem;font-style:italic;padding:.5rem">${gs.isMyTurn?'':'Waiting for opponent to ask…'}</div>`}
+      </div>
+
+      ${canAsk?`
+      <div class="panel">
+        <div class="panel-title">Make Final Guess</div>
+        <p class="guess-warning">Warning: One wrong guess = instant loss!</p>
+        <select class="guess-select" id="guess-select">
+          <option value="">— Select a character —</option>
+          ${CHARS.filter(c=>!gs.eliminated.has(c.name)).map(c=>`<option value="${c.name}">${c.name}</option>`).join('')}
+        </select>
+        <button class="btn btn-danger" id="btn-guess" style="width:100%">Final Guess!</button>
+      </div>`:''}
+    </div>
+  </div>`;
+}
+
+function tmplGameOver(){
+  const myC=getChar(gs.myChar);
+  const oppC=gs.opponentChar?getChar(gs.opponentChar):null;
+  const guessC=gs.myGuessChar?getChar(gs.myGuessChar):null;
+  return`<div class="screen">
+    <div class="gameover-emoji">${gs.won?'WIN':'LOSS'}</div>
+    <div class="gameover-title ${gs.won?'win':'lose'}">${gs.won?'You Won!':'You Lost!'}</div>
+    <p class="info-txt">${gs.won?'Congratulations! You correctly identified the mystery character!':'Better luck next round!'}</p>
+    <div class="reveal-row">
+      <div class="reveal-card">
+        <div class="reveal-lbl">You were</div>
+        <img class="reveal-img" src="${myC.img}" alt="${myC.name}">
+        <div class="reveal-name">${myC.name}</div>
+      </div>
+      ${oppC?`<div class="reveal-card">
+        <div class="reveal-lbl">Opponent was</div>
+        <img class="reveal-img" src="${oppC.img}" alt="${oppC.name}">
+        <div class="reveal-name">${oppC.name}</div>
+      </div>`:''}
+      ${guessC?`<div class="reveal-card" style="border-color:${gs.won?'var(--green)':'var(--red)'}">
+        <div class="reveal-lbl">You guessed</div>
+        <img class="reveal-img" src="${guessC.img}" alt="${guessC.name}">
+        <div class="reveal-name">${guessC.name}</div>
+      </div>`:''}
+    </div>
+    <div class="btn-row"><button class="btn btn-primary" id="btn-play-again">Play Again</button></div>
+  </div>`;
+}
+
+function bindEvents(){
+  el('btn-create')?.addEventListener('click',createGame);
+  el('btn-go-join')?.addEventListener('click',()=>{gs.phase='joining';gs.joinInput='';gs.error='';render();});
+  el('btn-back')?.addEventListener('click',()=>{destroyPeer();gs.phase='home';gs.error='';render();});
+  el('code-copy')?.addEventListener('click',()=>{
+    const e2=el('code-copy');
+    navigator.clipboard.writeText(gs.roomCode).then(()=>{
+      e2.textContent='Copied! ✓';e2.style.color='var(--green)';
+      setTimeout(()=>{e2.textContent=gs.roomCode;e2.style.color='';},1800);
+    }).catch(()=>{});
+  });
+  const jin=el('join-input');
+  if(jin){
+    jin.addEventListener('input',e=>{gs.joinInput=e.target.value.toUpperCase();e.target.value=gs.joinInput;});
+    jin.addEventListener('keydown',e=>{if(e.key==='Enter')joinGame();});
+    jin.focus();
+  }
+  el('btn-connect')?.addEventListener('click',joinGame);
+  document.querySelectorAll('[data-pick]').forEach(card=>{
+    card.addEventListener('click',()=>{gs.myChar=card.dataset.pick;render();});
+  });
+  el('btn-confirm')?.addEventListener('click',confirmPick);
+  document.querySelectorAll('[data-elim]').forEach(card=>{
+    card.addEventListener('click',()=>{
+      const name=card.dataset.elim;
+      if(gs.eliminated.has(name)){gs.eliminated.delete(name);card.classList.remove('elim');}
+      else{gs.eliminated.add(name);card.classList.add('elim');}
+      const rem=el('rem-count');
+      if(rem)rem.textContent=(CHARS.length-gs.eliminated.size)+' of '+CHARS.length+' remaining';
+    });
+  });
+  const askIn=el('ask-input');
+  if(askIn)askIn.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();askQuestion(askIn.value);}});
+  el('btn-ask')?.addEventListener('click',()=>{const inp=el('ask-input');if(inp)askQuestion(inp.value);});
+  el('btn-yes')?.addEventListener('click',()=>answerQuestion('Yes'));
+  el('btn-no')?.addEventListener('click',()=>answerQuestion('No'));
+  el('btn-guess')?.addEventListener('click',()=>{const sel=el('guess-select');if(sel?.value)makeGuess(sel.value);});
+  el('btn-play-again')?.addEventListener('click',()=>{
+    destroyPeer();
+    Object.assign(gs,{phase:'home',myChar:null,opponentChar:null,myGuessChar:null,eliminated:new Set(),chatLog:[],won:null,opponentReady:false,pendingQ:null,error:'',isMyTurn:false});
+    render();
+  });
+  scrollChat();
+}
+function el(id){return document.getElementById(id);}
+render();
+</script>
+</body>
+</html>
